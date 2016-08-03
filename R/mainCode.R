@@ -309,6 +309,6 @@ print("Done execution")
 
 ##############################################################################################
 startMain <- Sys.time()
-source("./R/GOGroupTests.R") #cell type by GO group tests
+source("./R/GOGroupByCellTypeTests.R") #cell type by GO group tests
 Sys.time() - startMain
 print(Sys.time() - startMain)
