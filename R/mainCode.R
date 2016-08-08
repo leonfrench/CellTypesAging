@@ -33,18 +33,18 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 if (interactive()) { #set the variables manually if in Rstudio, for testing
-  agingGeneSource <- "AW"
+  #agingGeneSource <- "AW"
   #agingGeneSource <- "Blood"
-  #agingGeneSource <- "Mistry"
+  agingGeneSource <- "Mistry"
   
-  cellTypeSource <- "Tasic"
-  #cellTypeSource <- "Zeisel"
+  #cellTypeSource <- "Tasic"
+  cellTypeSource <- "Zeisel"
 
-  #level <- "TranscriptomicName"
-  level <- "mainClass"
+  level <- "TranscriptomicName"
+#  level <- "mainClass"
   
   cores <- 4
-  iterations <- 4
+  iterations <- 2
   
   } else if (!is.null(opt$ageSource) & !is.null(opt$cellSource) & !is.null(opt$iterations)) {
   agingGeneSource <- opt$ageSource

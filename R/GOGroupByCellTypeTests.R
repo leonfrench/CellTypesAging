@@ -18,10 +18,6 @@ length(go_object)
 #filter for all genes with any GO group!
 symbolsInGO <- getSYMBOL(unique(unlist(go_object)), data='org.Hs.eg')
 
-#axon_gene <- go_object['GO:0008083']
-#axon_gene <- unique(unlist(axon_gene, use.names=F)) #discard evidence codes
-#axon_geneSymbols <- unique(getSYMBOL(axon_gene, data='org.Hs.eg'))
-
 #create a hash table that links GO group to gene symbol and name
 goTable <- hash()
 goNames <- hash()
@@ -35,7 +31,7 @@ system.time(
     goTable[[goGroupName]] <- genesymbols
   }
 )
-
+print("Done creating GO Hash")
 start <- Sys.time()
 #prune the GO table
 for(goGroupName in keys(goTable)) {
@@ -53,6 +49,7 @@ print("Starting emperical runs")
 start <- Sys.time()
 #multiproc
 geneGroupResults = foreach(targetCellType=unique(rpkmByType2xHuman$CellClassID), .combine=rbind) %dopar% {  
+
   thisResult <- data.frame( id=character(), name=character(), geneCount= numeric(), p=numeric(), stringsAsFactors=F)
   resultposition <- 0
   #iterate cell type lists here
@@ -73,11 +70,18 @@ geneGroupResults = foreach(targetCellType=unique(rpkmByType2xHuman$CellClassID),
     #if (geneCount > 60 & geneCount < 140) next();
     #if (geneCount > 160 & geneCount < 290) next();
     if (!(length(genesymbols) > 10 & length(genesymbols) < 200)) next();
+    if (all(resultsOfInterest$inGOGroup)) next();
     #print(paste("GO group", goGroupName, "position:", resultposition))
     
     auroc <- auroc_analytic(rank(resultsOfInterest$agingPValuesWithDirection), resultsOfInterest$inGOGroup)
-    wilcoxP <- wilcox.test(agingPValuesWithDirection ~ inGOGroup, resultsOfInterest)$p.value  #, alternative = "less"? force same direction as whole cell type?
-    
+    wilcoxP <- tryCatch({
+	wilcox.test(agingPValuesWithDirection ~ inGOGroup, resultsOfInterest)$p.value  #, alternative = "less"? force same direction as whole cell type?
+    }, error = function(e) {
+       print("ERROR on wilcox")
+       print(resultsOfInterest$inGOGroup)
+       print(resultsOfInterest)
+print(nrow(resultsOfInterest))
+	})
     resultposition <- resultposition + 1
     thisResult[resultposition, "geneCount"] <- length(genesymbols)
     thisResult[resultposition, "id"] <- goGroupName
@@ -94,8 +98,8 @@ geneGroupResults = foreach(targetCellType=unique(rpkmByType2xHuman$CellClassID),
   }
   thisResult
 }
+print("Done emperical runs for GO")
 Sys.time() - start
-print("Done emperical runs")
 
 geneGroupResults$uniqueStats <- paste(geneGroupResults$geneCount, geneGroupResults$AUROC, geneGroupResults$spec.AUROC, geneGroupResults$targetCellType)
 geneGroupResults <- tbl_df(geneGroupResults)
@@ -116,6 +120,12 @@ head(subset(geneGroupResults,targetCellType!="CelltypeNonSpecific"), n=20)
 #save(file=paste0(outputFolder,"rpkmByType2xHuman.RData"),rpkmByType2xHuman)
 #save(file=paste0(outputFolder,"aging_genes_aw_fisher_data.RData"),aw_result_mouseFilter)
 write.csv(geneGroupResults, file=paste0(outputFolder,"CellbyGOEnrichment.csv"),row.names=F)
+
+allCellByGO <- geneGroupResults
+allCellByGO <- allCellByGO %>% group_by(targetCellType) %>% arrange(p) %>% summarize(name.1st=first(name), AUROC.1st = first(AUROC), p.adjusted.1st = first(p.adjusted),name.2nd=nth(name,2), AUROC.2nd = nth(AUROC,2), p.adjusted.2nd = nth(p.adjusted,2) ,name.3rd=nth(name,3), AUROC.3rd = nth(AUROC,3), p.adjusted.3rd = nth(p.adjusted,3)) %>% arrange(p.adjusted.1st)
+allCellByGO <- allCellByGO %>% mutate_each(funs(signif(.,2)), starts_with("AUROC")) %>% mutate_each(funs(signif(.,2)), starts_with("p.adjusted")) 
+write.csv(allCellByGO, paste0(outputFolder, "CellbyGOEnrichmentSummary.csv"),row.names=F)
+
 
 # #get genes for a specific group and cell type
 # targetCellType <- "Sst Cdk6"
