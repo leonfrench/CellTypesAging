@@ -19,7 +19,6 @@ linLabMelted <- mutate(linLabMelted, log1Expression = log(1+moleculeCount))
 
 
 #add cell type information
-
 if (level == "TranscriptomicName") {
   cellTable <- dplyr::rename(cellTable, CellClassID= level2class)
 } else if (level == "mainClass") {

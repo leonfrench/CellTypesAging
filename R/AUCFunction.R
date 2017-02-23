@@ -1,4 +1,4 @@
-#taken from https://github.com/sarbal/EGAD/blob/master/EGAD/R/auroc_analytic.R
+# from https://github.com/sarbal/EGAD/blob/master/EGAD/R/auroc_analytic.R
 # by Sara Ballouz
 auroc_analytic <- function(scores, labels) {
   

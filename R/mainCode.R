@@ -33,20 +33,22 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 if (interactive()) { #set the variables manually if in Rstudio, for testing
-  #agingGeneSource <- "AW"
+  agingGeneSource <- "AW"
+  agingGeneSource <- "metaA"
   #agingGeneSource <- "Blood"
-  agingGeneSource <- "Mistry"
-  
-  #cellTypeSource <- "Tasic"
-  cellTypeSource <- "Zeisel"
+  #agingGeneSource <- "Mistry"
 
+    
+  cellTypeSource <- "Tasic"
+  #cellTypeSource <- "Zeisel"
+  
   level <- "TranscriptomicName"
-#  level <- "mainClass"
+  #  level <- "mainClass"
   
-  cores <- 4
-  iterations <- 2
+  cores <- 3
+  iterations <- 1000
   
-  } else if (!is.null(opt$ageSource) & !is.null(opt$cellSource) & !is.null(opt$iterations)) {
+} else if (!is.null(opt$ageSource) & !is.null(opt$cellSource) & !is.null(opt$iterations)) {
   agingGeneSource <- opt$ageSource
   cellTypeSource <- opt$cellSource
   iterations <- opt$iterations
@@ -74,8 +76,13 @@ print(getwd())
 
 if (agingGeneSource == "Blood") {
   bloodAging <- read_csv("./data/Blood aging list/GOGroupResults.vMajor.reducedCols.csv")
-  bloodAging <- mutate(bloodAging, agingPValuesWithDirection = ifelse(Direction == "+", 1-P, -1+P))
+  #bloodAging <- mutate(bloodAging, agingPValuesWithDirection = ifelse(Direction == "+", 1-P, -1+P)) #not used due to precision trouble
   bloodAging <- dplyr::rename(bloodAging, gene_symbol = `NEW-Gene-ID`) %>% dplyr::rename(p_value_aw = P)
+  
+  #use ranks for ordering due to precision trouble
+  bloodAging$agingPValuesWithDirection <- rank(-1*bloodAging$p_value_aw)
+  bloodAging[bloodAging$Direction == "-","agingPValuesWithDirection"] <- -1*bloodAging[bloodAging$Direction == "-", "agingPValuesWithDirection"]
+  
   aw_result <- bloodAging
 } else if (agingGeneSource == "Mistry") {
   mistryAgeDown <- read_csv("./data/Mistry Age Tables/Supplementary Table 10.ageDown.csv")
@@ -118,13 +125,95 @@ if (agingGeneSource == "Blood") {
   #pick the best p-value per duplicated gene
   aw_result <- dplyr::rename(aw_result, p_value_aw = AW_pvalue)
   
-  #convert p-value to -1 to 1 scale 
-  aw_result[aw_result$RLM.coef.meta >= 0,"agingPValuesWithDirection"] <- 1-aw_result[aw_result$RLM.coef.meta >= 0, "p_value_aw"]
-  aw_result[aw_result$RLM.coef.meta < 0,"agingPValuesWithDirection"] <- -1+aw_result[aw_result$RLM.coef.meta <0, "p_value_aw"]
+  #convert p-value to -1 to 1 scale - not used - changed due to ties at 1/-1
+  #aw_result[aw_result$RLM.coef.meta >= 0,"agingPValuesWithDirection"] <- 1-aw_result[aw_result$RLM.coef.meta >= 0, "p_value_aw"]
+  #aw_result[aw_result$RLM.coef.meta < 0,"agingPValuesWithDirection"] <- -1+aw_result[aw_result$RLM.coef.meta <0, "p_value_aw"]
+  
+  aw_result$agingPValuesWithDirection <- rank(-1*aw_result$p_value_aw)
+  aw_result[aw_result$RLM.coef.meta < 0,"agingPValuesWithDirection"] <- -1*aw_result[aw_result$RLM.coef.meta <0, "agingPValuesWithDirection"]
+  
+} else if (agingGeneSource == "metaA") { #meta depression score - temporary
+  aw_result <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
+  effectSizeCols <- c("MD2_DLPFC_M.1", "MD1_ACC_M.1",  "MD2_ACC_M.1",  "MD1_AMY_M.1",  "MD2_DLPFC_F.1", "MD3_ACC_F.1", "MD2_ACC_F.1", "MD3_AMY_F.1")
+  
+  #male/female only
+  effectSizeCols <- c("MD2_DLPFC_M.1", "MD1_ACC_M.1",  "MD2_ACC_M.1",  "MD1_AMY_M.1")
+  #effectSizeCols <- c("MD2_DLPFC_F.1", "MD3_ACC_F.1", "MD2_ACC_F.1", "MD3_AMY_F.1")
+  write.csv(effectSizeCols, file=paste0(outputFolder,"UsingMales.txt"),row.names=F)
+  
+  
+  aw_result$medianEffect <- apply(aw_result[,effectSizeCols ],1,median) #median effect across the studies (split by sexes)
+  
+  #two methods for p-value REM_ALL_P or roP_OC_p
+  #aw_result$p_value_aw <- aw_result$REM_ALL_P
+  #males REM_M_P or females REM_F_P
+  #aw_result$p_value_aw <- aw_result$REM_F_P
+  aw_result$p_value_aw <- aw_result$REM_M_P
+  
+  aw_result <- dplyr::select(aw_result, gene_symbol = SYMBOL, p_value_aw, medianEffect)
+  aw_result <- filter(aw_result, !is.na(p_value_aw))
+  aw_result$agingPValuesWithDirection <- rank(-1*aw_result$p_value_aw)
+  aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
+  sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
+} else if (agingGeneSource == "metaASeneyMale") { #meta depression score - temporary
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  colnames(aw_result)[1] <- "SYMBOL"
+  #fix symbols
+  goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
+  goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)
+  aw_result <- inner_join(aw_result, dplyr::select(goodGeneNames, namesUpper,SYMBOL), by=c("SYMBOL"="namesUpper"))
+  aw_result$SYMBOL <- aw_result$SYMBOL.y
+
+  aw_result$medianEffect <- aw_result$EffectSize_Males #median effect across the studies (split by sexes)
+  aw_result$p_value_aw <- aw_result$pvalue_Males
+  
+  aw_result <- dplyr::select(aw_result, gene_symbol = SYMBOL, p_value_aw, medianEffect)
+  aw_result <- filter(aw_result, !is.na(p_value_aw))
+  aw_result$agingPValuesWithDirection <- rank(-1*aw_result$p_value_aw)
+  aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
+  sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
+} else if (agingGeneSource == "metaASeneyFemale") { #meta depression score - temporary
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  colnames(aw_result)[1] <- "SYMBOL"
+  #fix symbols
+  goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
+  goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)
+  aw_result <- inner_join(aw_result, dplyr::select(goodGeneNames, namesUpper,SYMBOL), by=c("SYMBOL"="namesUpper"))
+  aw_result$SYMBOL <- aw_result$SYMBOL.y
+
+  aw_result$medianEffect <- aw_result$EffectSize_Females #median effect across the studies (split by sexes)
+  aw_result$p_value_aw <- aw_result$pvalue_Females
+  
+  #code duplicated!
+  aw_result <- dplyr::select(aw_result, gene_symbol = SYMBOL, p_value_aw, medianEffect)
+  aw_result <- filter(aw_result, !is.na(p_value_aw))
+  aw_result$agingPValuesWithDirection <- rank(-1*aw_result$p_value_aw)
+  aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
+  sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
+} else if (agingGeneSource == "metaASeneyMetaR") { #meta depression score - temporary
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  colnames(aw_result)[1] <- "SYMBOL"
+  #fix symbols
+  goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
+  goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)
+  aw_result <- inner_join(aw_result, dplyr::select(goodGeneNames, namesUpper,SYMBOL), by=c("SYMBOL"="namesUpper"))
+  aw_result$SYMBOL <- aw_result$SYMBOL.y
+
+  aw_result$medianEffect <- aw_result$EffectSize_MetaR_sex #median effect across the studies (split by sexes)
+  aw_result$p_value_aw <- aw_result$pvalue_MetaR_sex
+  
+  #code duplicated!
+  aw_result <- dplyr::select(aw_result, gene_symbol = SYMBOL, p_value_aw, medianEffect)
+  aw_result <- filter(aw_result, !is.na(p_value_aw))
+  aw_result$agingPValuesWithDirection <- rank(-1*aw_result$p_value_aw)
+  aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
+  sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
 } else {
   print("ERROR no aging gene list source")
   stop()
 }
+
+
 
 #################################################################
 #################################################################
@@ -159,6 +248,8 @@ getEnrichedHuman <- function(rpkmDataCore , aw_result_mouseFilter) {
   #add stable genes to rpkmByType2x
   stableGenes$CellClassID <- "CelltypeNonSpecific"
   
+  range((group_by(rpkmByType2x, CellClassID) %>% summarise(genes = n_distinct(geneName)))$genes)
+  
   #################################################################
   #get average amount of non-specitif genes
   averageSize <- median((group_by(rpkmByType2x, CellClassID) %>% summarise(genes = n_distinct(geneName)))$genes)
@@ -167,7 +258,7 @@ getEnrichedHuman <- function(rpkmDataCore , aw_result_mouseFilter) {
   stableGenesSample$CellClassID <- "CelltypeNonSpecificSample"
   
   rpkmByType2x <- bind_rows(dplyr::select(rpkmByType2x,CellClassID,log1ExpressionZ, geneName), stableGenes)
-  rpkmByType2x <- bind_rows(rpkmByType2x, stableGenesSample)
+  #rpkmByType2x <- bind_rows(rpkmByType2x, stableGenesSample)
   #################################################################
   
   #convert to human genes
@@ -192,7 +283,7 @@ getFilteredAWresult <- function(aw_result, mouseGenes) {
 
 #filter out aw_result human genes that cannot be reached from the mouse genes, only do once
 aw_result_mouseFilter <- getFilteredAWresult(aw_result, unique(rpkmDataCore$geneName)) 
-
+print(paste("Number of genes in ranking after filtering:" , nrow(aw_result_mouseFilter)))
 #calls above function
 rpkmByType2xHuman <- getEnrichedHuman(rpkmDataCore, aw_result_mouseFilter) 
 
@@ -238,6 +329,8 @@ dir.create(paste0(outputFolder, "aw_result.human gene count.",nrow(aw_result_mou
 
 
 
+#############################################################################################
+#############################################################################################
 #create empirical p-values
 #############################################################################################
 geneCellResults <- as.data.frame(geneCellResults)
@@ -305,10 +398,11 @@ write.csv(dplyr::select(geneCellResults,CellClassID, CellCount, geneCount, AUROC
 print("Resetting data")
 #set back to the real data
 rpkmByType2xHuman <- getEnrichedHuman(rpkmDataCore, aw_result_mouseFilter)
-print("Done execution")
+print("Done execution of cell type stage")
 
 ##############################################################################################
 startMain <- Sys.time()
+source("./R/CustomGeneLists.R")
 source("./R/GOGroupByCellTypeTests.R") #cell type by GO group tests
 Sys.time() - startMain
 print(Sys.time() - startMain)

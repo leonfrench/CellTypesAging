@@ -40,6 +40,12 @@ if (level == "TranscriptomicName") {
 } else if (level == "mainClass") {
   cellTable$CellClassID <- cellTable$major_class
   enrichmentThreshold <- 1.4
+} else if (level == "Vip.Sst.Pvalb.Excite") {
+  cellTable$CellClassID <- NA
+  cellTable[!is.na(cellTable$sub_class) & cellTable$sub_class == "Vip", "CellClassID"] <- "Vip"
+  cellTable[!is.na(cellTable$sub_class) & cellTable$sub_class == "Pvalb", "CellClassID"] <- "Pvalb"
+  cellTable[!is.na(cellTable$sub_class) & grepl("Sst", cellTable$sub_class), "CellClassID"] <- "Sst"
+  cellTable[!is.na(cellTable$major_class) & cellTable$major_class == "Excitatory", "CellClassID"] <- "Excitatory"
 } else {
   print("unkown level to group cells - set level variable")
   stop()
@@ -48,6 +54,7 @@ if (level == "TranscriptomicName") {
 #remove unknown or NA cell type names
 #remove NA and unkown?
 cellsToUseWithLongNames <- setdiff(cellsToUseWithLongNames, filter(cellTable, is.na(CellClassID) | CellClassID == "Unknown" | major_class == "Unknown") %>% dplyr::select(short_name))
+print(paste("Number of cells:",nrow(cellsToUseWithLongNames)))
 
 #extra filtering
 #cellsToUseWithLongNames <- setdiff(cellsToUseWithLongNames, filter(cellTable, is.na(CellClassID) | major_class == "Glia") %>% select(short_name))
@@ -97,13 +104,11 @@ rpkmDataCore <- filter(rpkmDataCore, !(geneName %in% zeroCountGenes))
 
 #convert to log(+1)
 rpkmDataCore <- mutate(rpkmDataCore, log1Expression = log(1+value))
-rpkmDataCore <- dplyr::select(rpkmDataCore, -value)
+#rpkmDataCore <- dplyr::select(rpkmDataCore, -value) #keep original value
 
 colnames(rpkmDataCore)[2] <- "long_name"
 
 #update gene name here
-
-
 
 
 #join with mapping file for new symbol
@@ -119,3 +124,4 @@ rpkmDataCore <- inner_join(rpkmDataCore, dplyr::select(cellTable,CellClassID,lon
 #print cell counts
 rpkmDataCore <- group_by(rpkmDataCore, CellClassID)
 summarise(rpkmDataCore, CellCount = n_distinct(long_name), genes = n_distinct(geneName))
+range(summarise(rpkmDataCore, CellCount = n_distinct(long_name), genes = n_distinct(geneName))$CellCount)
