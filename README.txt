@@ -21,3 +21,8 @@ Zeisel data instructions from project base folder::
 mkdir "data/Zeisel"
 cd "data/Zeisel"
 wget http://linnarssonlab.org/blobs/cortex/expression_mRNA_17-Aug-2014.txt
+
+
+
+Several gene lists have been added to the data folder. The sources are partially encoded in the filename and were obtained from the supplement tables of several papers that have been cited in our corresponding manuscript (when used).
+
