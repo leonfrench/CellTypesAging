@@ -11,9 +11,9 @@ library(tmod)
 library(readr)
 library(homologene)
 
-targetVariable = "regression"
+targetVariable = "female"
 
-metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
 #fix symbols
 goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
@@ -32,6 +32,7 @@ if (targetVariable == "male") {
   metaRegressionResult$medianEffect <- metaRegressionResult$EffectSize_MetaR_sex #median effect across the studies (split by sexes)
   metaRegressionResult$p_value_aw <- metaRegressionResult$pvalue_MetaR_sex
 } else {
+  metaRegressionResult <- NULL
   stop("no target sex given")
 }
 
@@ -79,7 +80,7 @@ result <- mutate(rowwise(result), aspect = Ontology(ID))
 subset(result, AUC < 0.5)
 subset(result, AUC > 0.5)
 
-#write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
+#write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
 
 ###############
 #plot a GO group in the median effect data
@@ -95,6 +96,8 @@ termID <- 'GO:0014015'
 forRHeatmap <- forRHeatmap[unlist(geneSetsGO$MODULES2GENES[termID]),]
 heatmap(as.matrix(forRHeatmap),margins=c(12,8), scale = "none", Colv = NA, main = Term(termID))
 
+
+###############
 #check darmansis lists
 tmodNames <- data.frame()
 modules2genes <- list()
@@ -107,12 +110,13 @@ for(geneListFilename in list.files("/Users/lfrench/Desktop/results/CellTypesAgin
   
   #already a human gene list
   modules2genes[shortName] <- list(genesOfInterest$V1)
+  #print(intersect(sortedGenes, unlist(genesOfInterest$V1)))
   
   tmodNames <- rbind(tmodNames, data.frame(ID=shortName, Title = shortName))
 }
 geneSets <- makeTmod(modules = tmodNames, modules2genes = modules2genes)
 
-result <- tmodUtest(sortedGenes, mset=geneSets, qval = 1, filter = T)
+result <- tmodUtest(sortedGenes, mset=geneSets, qval = 1, filter = F)
 result <- tbl_df(result) %>% dplyr::select(Title, geneCount =N1,AUC,  P.Value, adj.P.Val)
 result
 
@@ -139,7 +143,7 @@ cellType <- "Darmanis.Microglia"
 cellType <- "Darmanis.Oligo"
 cellType <- "Darmanis.OligoPrecusors"
 aw_result <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
-metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
 goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
 goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)

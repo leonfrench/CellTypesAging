@@ -94,7 +94,6 @@ for(agingGeneSource in c("Blood", "Mistry", "AW")) {
       
     }
     
-    
     write.csv(geneCellResultsOtherLists, file=paste0(outputFolder,prefix,".CellTypeLists.csv"),row.names=F)
   }
 }

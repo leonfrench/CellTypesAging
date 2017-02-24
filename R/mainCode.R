@@ -156,7 +156,7 @@ if (agingGeneSource == "Blood") {
   aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
   sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
 } else if (agingGeneSource == "metaASeneyMale") { #meta depression score - temporary
-  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
   colnames(aw_result)[1] <- "SYMBOL"
   #fix symbols
   goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
@@ -173,7 +173,7 @@ if (agingGeneSource == "Blood") {
   aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
   sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
 } else if (agingGeneSource == "metaASeneyFemale") { #meta depression score - temporary
-  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
   colnames(aw_result)[1] <- "SYMBOL"
   #fix symbols
   goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
@@ -191,7 +191,7 @@ if (agingGeneSource == "Blood") {
   aw_result <- mutate(aw_result, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
   sortedGenes <- arrange(aw_result, desc(agingPValuesWithDirection))$gene_symbol
 } else if (agingGeneSource == "metaASeneyMetaR") { #meta depression score - temporary
-  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-15-17_MLS.csv")
+  aw_result <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
   colnames(aw_result)[1] <- "SYMBOL"
   #fix symbols
   goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
