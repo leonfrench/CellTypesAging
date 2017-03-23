@@ -31,7 +31,7 @@ getEulerDiagram <- function(goResult) {
   vForGGplot <- as.data.frame(vForGGplot)
   diagram <- ggplot(vForGGplot) + geom_blank(aes(x, y)) + 
     geom_polygon(aes(x,y, group=goName, fill=goName), data=circles, alpha=0.4) +
-    coord_fixed() + theme_void() + theme(legend.position="none") +
+    coord_fixed() + theme_void(base_size = 16) + theme(legend.position="none") +
     geom_label_repel(aes(x, y, fill=goName, label = goName), color="black", segment.alpha=0, box.padding = unit(0.2, "lines")) 
     diagram
 }
