@@ -84,11 +84,13 @@ subset(result, AUC < 0.5)
 subset(result, AUC > 0.5)
 result
 
+#write out
+write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
+
 #Euler diagrams
 source("./R/metaA/MakeEulerDiagram.R")
 (plot <- getEulerDiagram(head(result, n=10)))
-ggsave(plot = plot, filename=paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".top10Plot.",targetVariable,".pdf"), width=6, height=6)
-write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
+ggsave(plot = plot, filename=paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".top10Plot.",targetVariable,".pdf"), width=12, height=12)
 
 
 
