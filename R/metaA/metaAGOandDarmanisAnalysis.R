@@ -10,8 +10,11 @@ library(GO.db)
 library(tmod)
 library(readr)
 library(homologene)
+library(ggrepel)
 
+targetVariable = "regression"
 targetVariable = "female"
+targetVariable = "male"
 
 metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
@@ -79,9 +82,20 @@ result <- tbl_df(result) %>% dplyr::select(Title, geneCount =N1,AUC,  P.Value, a
 result <- mutate(rowwise(result), aspect = Ontology(ID))
 subset(result, AUC < 0.5)
 subset(result, AUC > 0.5)
+result
 
-#write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
+#Euler diagrams
+source("./R/metaA/MakeEulerDiagram.R")
+(plot <- getEulerDiagram(head(result, n=10)))
+ggsave(plot = plot, filename=paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".top10Plot.",targetVariable,".pdf"), width=6, height=6)
+write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
 
+
+
+###############
+###############
+###############
+###############
 ###############
 #plot a GO group in the median effect data
 aw_result <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
@@ -92,10 +106,11 @@ aw_result <- aw_result[,effectSizeCols]
 forRHeatmap <- as.data.frame(aw_result)
 rownames(forRHeatmap) <- as.character(forRHeatmap[,"SYMBOL"])
 forRHeatmap <- forRHeatmap[,-1]
-termID <- 'GO:0014015'
+termID <- 'GO:0070126'
+median(as.matrix(forRHeatmap[,5:8]))
 forRHeatmap <- forRHeatmap[unlist(geneSetsGO$MODULES2GENES[termID]),]
 heatmap(as.matrix(forRHeatmap),margins=c(12,8), scale = "none", Colv = NA, main = Term(termID))
-
+median(as.matrix(forRHeatmap[,5:8]))
 
 ###############
 #check darmansis lists
@@ -134,8 +149,6 @@ rownames(forRHeatmap) <- as.character(forRHeatmap[,"SYMBOL"])
 forRHeatmap <- forRHeatmap[,-1]
 forRHeatmap <- forRHeatmap[intersect(rownames(forRHeatmap), unlist(geneSets$MODULES2GENES[cellType])),]
 heatmap(as.matrix(forRHeatmap),margins=c(12,8), scale = "none", Colv = NA, main = cellType)
-
-
 
 
 ######## compare values between old and new p-values
