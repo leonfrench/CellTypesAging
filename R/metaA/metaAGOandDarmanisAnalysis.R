@@ -13,8 +13,8 @@ library(homologene)
 library(ggrepel)
 
 targetVariable = "regression"
-targetVariable = "female"
-targetVariable = "male"
+#targetVariable = "female"
+#targetVariable = "male"
 
 metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
@@ -39,7 +39,7 @@ if (targetVariable == "male") {
   stop("no target sex given")
 }
 
-metaRegressionResult <- dplyr::select(metaRegressionResult, gene_symbol = SYMBOL, p_value_aw, medianEffect)
+metaRegressionResult <- dplyr::select(metaRegressionResult, gene_symbol = SYMBOL, p_value_aw, medianEffect, EffectSize_Females, EffectSize_Males)
 metaRegressionResult <- filter(metaRegressionResult, !is.na(p_value_aw))
 metaRegressionResult$agingPValuesWithDirection <- rank(-1*metaRegressionResult$p_value_aw)
 metaRegressionResult <- mutate(metaRegressionResult, agingPValuesWithDirection = if_else(medianEffect < 0, -1*agingPValuesWithDirection, agingPValuesWithDirection ))
@@ -84,6 +84,17 @@ subset(result, AUC < 0.5)
 subset(result, AUC > 0.5)
 result
 
+#get the average effect sizes
+if (targetVariable == "regression") {
+  meanEffects <- NULL
+  for(group in result$ID) {
+    genes <- unlist(geneSetsGO$MODULES2GENES[group])
+    meanEffect <- metaRegressionResult %>% filter(gene_symbol %in% genes) %>% ungroup() %>% summarize(ID = group, EffectSize_Females = mean(EffectSize_Females), EffectSize_Males = mean(EffectSize_Males))
+    meanEffects <- bind_rows(meanEffects, meanEffect)
+  }
+  result <- inner_join(result, meanEffects, by="ID")
+}
+  
 #write out
 write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".GOResults.",targetVariable,".csv"))
 
