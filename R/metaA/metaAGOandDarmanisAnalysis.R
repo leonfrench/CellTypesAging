@@ -18,11 +18,13 @@ targetVariable = "regression"
 
 metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
+
 #fix symbols
 goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
 goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)
-metaRegressionResult <- inner_join(metaRegressionResult, dplyr::select(goodGeneNames, namesUpper,SYMBOL), by=c("SYMBOL"="namesUpper"))
-metaRegressionResult$SYMBOL <- metaRegressionResult$SYMBOL.y
+metaRegressionResult$namesUpper <- toupper(metaRegressionResult$SYMBOL)
+metaRegressionResult <- left_join(metaRegressionResult, dplyr::select(goodGeneNames, namesUpper,SYMBOL), by=c("namesUpper"="namesUpper")) %>% dplyr::select(-namesUpper)
+metaRegressionResult %<>% mutate(SYMBOL = if_else(!is.na(SYMBOL.y),SYMBOL.y,SYMBOL.x)) %>% dplyr::select(SYMBOL, everything()) %>% dplyr::select(-SYMBOL.x, -SYMBOL.y)
 
 
 if (targetVariable == "male") {
