@@ -63,10 +63,12 @@ if (exists("geneSetsGO") && length(geneSetsGO$MODULES2GENES) > 1000 ) { #assume 
   goCount <- length(go_object)
   count <- 1
   for(goGroupName in names(go_object)) {
+    # if (Ontology(goGroupName) == "CC") next(); #change in order to skip an ontology
     if (count %% 1000 == 0) print(paste(count, "of", goCount))
     count <- count + 1
     
     goGroup <- go_object[goGroupName]
+      
     geneIDs <- unique(unlist(goGroup, use.names=F))  #discard evidence codes
     genesymbols <- unique(getSYMBOL(geneIDs, data='org.Hs.eg'))
     
