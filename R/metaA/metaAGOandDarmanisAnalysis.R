@@ -19,7 +19,7 @@ targetVariable = "regression"
 metaRegressionResult <- read_csv("./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv")
 colnames(metaRegressionResult)[1] <- "SYMBOL"
 
-#fix symbols
+#fix gene symbols
 goodGeneNames <- read_csv("./data/metaA/MDD-metaAR_8cohorts_Final.csv")
 goodGeneNames$namesUpper <- toupper(goodGeneNames$SYMBOL)
 metaRegressionResult$namesUpper <- toupper(metaRegressionResult$SYMBOL)
@@ -130,6 +130,8 @@ heatmap(as.matrix(forRHeatmap),margins=c(12,8), scale = "none", Colv = NA, main 
 median(as.matrix(forRHeatmap[,5:8]))
 
 ###############
+###############
+###############
 #check darmansis lists
 tmodNames <- data.frame()
 modules2genes <- list()
@@ -148,10 +150,17 @@ for(geneListFilename in list.files("/Users/lfrench/Desktop/results/CellTypesAgin
 }
 geneSets <- makeTmod(modules = tmodNames, modules2genes = modules2genes)
 
-result <- tmodUtest(sortedGenes, mset=geneSets, qval = 1, filter = F)
-result <- tbl_df(result) %>% dplyr::select(Title, geneCount =N1,AUC,  P.Value, adj.P.Val)
+result <- tmodUtest(sortedGenes, mset=geneSets, qval = 1.1, filter = F)
+result <- tbl_df(result) %>% dplyr::select(Title, geneCount =N1,AUC,  P.Value, adj.P.Val) %>% mutate(Title = gsub("Darmanis.","",Title))
 result
+write.csv(result, paste0(gsub(".csv","","./data/metaA/MetaRegression_SexSpecific_2-17-17_MLS.csv"),".Darmanis.",targetVariable,".csv"))
 
+
+
+##############################################
+##############################################
+##############################################
+##############################################
 #heatmap for a Darmanis list
 cellType <- "Darmanis.Microglia"
 cellType <- "Darmanis.OligoPrecusors"
